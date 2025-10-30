@@ -1,6 +1,6 @@
 import type { Task } from "./types";
 
-const base = "/api"; // via proxy
+const base = import.meta.env.VITE_API_URL;
 
 export async function listTasks(): Promise<Task[]> {
   const res = await fetch(`${base}/tasks`);
