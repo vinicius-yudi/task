@@ -2,13 +2,10 @@ import { useEffect, useState } from "react";
 import type { Task } from "./types";
 import { listTasks, createTask, toggleTask, deleteTask } from "./api";
 import "./index.css";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   LayoutGrid,
-  Settings,
   CheckSquare,
-  HelpCircle,
   LogOut,
 } from "lucide-react";
 
@@ -94,7 +91,7 @@ export default function App() {
             <CheckSquare className="mr-2 h-4 w-4" />
             Tasks
           </Button>
-          
+
         </nav>
 
         <div className="absolute bottom-6">
