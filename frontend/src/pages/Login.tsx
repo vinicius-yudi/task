@@ -1,34 +1,38 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import "../index.css";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext"; 
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { login, isLoggedIn } = useAuth(); 
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    //abcdefg
     console.log("Login attempt with:", email, password);
+    
+    login();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
-      <Card className="w-[450px] h-[300px]">
+    <div className="min-h-screen flex items-center justify-center bg-slate-700">
+      <Card className="w-[450px]">
         <CardHeader>
           <CardTitle className="text-center text-slate-800 text-2xl font-bold">
-            Login
+            LOGIN
           </CardTitle>
           <CardDescription className="text-center">
-            Enter your credentials to access your account
+            Entre com suas credenciais para acessar sua conta
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -47,7 +51,7 @@ export function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="Password"
+                placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -56,6 +60,13 @@ export function Login() {
             <Button type="submit" className="w-full">
               Entrar
             </Button>
+            
+            <div className="text-center text-sm mt-4">
+              <span className="text-slate-500">Não tem conta? </span>
+              <Link to="/register" className="text-blue-600 hover:text-blue-400 font-medium">
+                Cadastre-se
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
