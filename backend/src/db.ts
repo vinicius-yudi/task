@@ -2,11 +2,8 @@ import { Task } from "./types";
 import { v4 as uuid } from "uuid";
 
 export const tasks: Task[] = [
-  { id: "1", title: "Configurar ambiente", createdAt: "2025-10-22T10:00:00Z", done: false },
-  { id: "2", title: "Escrever README curto", createdAt: "2025-10-22T10:05:00Z", done: true }
 ];
 
-// helpers
 export function createTask(title: string): Task {
   const t: Task = {
     id: uuid(),
