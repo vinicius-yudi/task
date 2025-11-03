@@ -6,19 +6,29 @@
   "type": "commonjs",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "db": "ts-node src/db.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.18.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/node": "^22.5.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.19.0",
+    "@types/uuid": "^10.0.0",
+    "prisma": "^6.18.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.9.3"
   }
 }
