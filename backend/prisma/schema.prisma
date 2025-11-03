@@ -7,15 +7,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  DEV
+}
+
 model User {
   id           String @id @default(uuid())
   name         String
   email        String @unique
   passwordHash String
   role         Role   @default(DEV)
+  tasks        Task[]
 }
 
-enum Role {
-  ADMIN
-  DEV
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  done        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
