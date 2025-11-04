@@ -50,10 +50,10 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-700">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-[450px]">
         <CardHeader>
-          <CardTitle className="text-center text-slate-800 text-2xl font-bold">
+          <CardTitle className="text-center text-foreground text-2xl font-bold">
             LOGIN
           </CardTitle>
           <CardDescription className="text-center">
