@@ -4,12 +4,15 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoggedIn } = useAuth();
+  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,10 +21,19 @@ export function Register() {
     }
   }, [isLoggedIn, navigate]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Register attempt with:", name, email, password);
-    login();
+    try {
+      await axios.post("http://localhost:5001/api/auth/register", {
+        name,
+        email,
+        password,
+      });
+      toast.success("Cadastro realizado com sucesso! Faça login.");
+      navigate("/login");
+    } catch (error) {
+      toast.error("Falha no cadastro. Tente novamente.");
+    }
   };
 
   return (
@@ -80,6 +92,7 @@ export function Register() {
           </form>
         </CardContent>
       </Card>
+
     </div>
   );
 }

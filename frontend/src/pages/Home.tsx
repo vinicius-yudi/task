@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import type { Task } from "@/types";
-import { listTasks, createTask, toggleTask, deleteTask } from "@/api";
 import { Button } from "@/components/ui/button";
 import {LogOut } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,56 +13,7 @@ export function Home() {
   const [error, setError] = useState<string | null>(null);
   const { logout } = useAuth();
 
-  async function refresh() {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await listTasks();
-      setTasks(data);
-    } catch (e: any) {
-      setError(e.message ?? "Erro inesperado");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    refresh();
-  }, []);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!title.trim()) return;
-    try {
-      setSubmitting(true);
-      setError(null);
-      const created = await createTask(title.trim());
-      setTasks((prev) => [created, ...prev]);
-      setTitle("");
-    } catch (e: any) {
-      setError(e.message ?? "Erro ao criar");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function onToggle(id: string) {
-    try {
-      const updated = await toggleTask(id);
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
-    } catch (e: any) {
-      setError(e.message ?? "Erro ao alternar");
-    }
-  }
-
-  async function onDelete(id: string) {
-    try {
-      await deleteTask(id);
-      setTasks((prev) => prev.filter((t) => t.id !== id));
-    } catch (e: any) {
-      setError(e.message ?? "Erro ao deletar");
-    }
-  }
+  
 
 return (
     <div className="flex min-h-screen">
@@ -108,7 +58,7 @@ return (
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-white mb-8">Tarefas</h1>
 
-          <form onSubmit={onSubmit} className="mb-8 flex gap-2">
+          <form  className="mb-8 flex gap-2">
             <input
               className="flex-1 bg-slate-900 text-white border-slate-800 p-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Tarefa"
@@ -151,7 +101,7 @@ return (
                     <input
                       type="checkbox"
                       checked={t.done}
-                      onChange={() => onToggle(t.id)}
+                      onChange={() => (t.id)}
                       className="w-5 h-5 rounded border-slate-700 bg-slate-800 checked:bg-blue-500"
                     />
                     <div className="flex-1">
@@ -170,7 +120,7 @@ return (
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => onDelete(t.id)}
+                    onClick={() => (t.id)}
                   >
                     Deletar
                   </Button>
