@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 export function Register() {
@@ -37,11 +37,11 @@ export function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-700">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-[450px]">
         <CardHeader>
-          <CardTitle className="text-center text-slate-800 text-2xl font-bold">
-            CADASTRA-SE
+          <CardTitle className="text-center text-foreground text-2xl font-bold">
+            CADASTRE-SE
           </CardTitle>
           <CardDescription className="text-center">
             Crie uma conta para começar a gerenciar suas tarefas
@@ -92,7 +92,6 @@ export function Register() {
           </form>
         </CardContent>
       </Card>
-
     </div>
   );
 }

@@ -8,8 +8,32 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ThemeProvider, useTheme } from './components/theme-provider';
 
 axios.defaults.withCredentials = true;
+
+function ThemedToasts() {
+  const { theme } = useTheme()
+  const systemPrefersDark =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches
+
+  const resolved = theme === "system" ? (systemPrefersDark ? "dark" : "light") : theme
+
+  return (
+    <ToastContainer
+      position="top-right"
+      autoClose={3000}
+      newestOnTop
+      closeOnClick
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme={resolved as "light" | "dark"}
+    />
+  )
+}
 
 function App() {
   const [user, setUser] = useState(null);
@@ -37,24 +61,17 @@ function App() {
   
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<Login />} />
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
           <Route path="*" element={<h1>404 - Página Não Encontrada</h1>} />
         </Routes>
-        <ToastContainer
-          position="top-right"
-          autoClose={3000}
-          newestOnTop
-          closeOnClick
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="dark"
-        />
+        <ThemedToasts />
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }
