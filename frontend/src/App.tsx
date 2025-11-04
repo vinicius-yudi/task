@@ -3,7 +3,7 @@ import { Home } from '@/pages/Home';
 import { Login} from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { PrivateRoute } from '@/components/PrivateRoute';
+import { PrivateRoute } from '@/components/privateRoute';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ToastContainer } from "react-toastify";
