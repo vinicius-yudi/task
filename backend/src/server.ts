@@ -1,9 +1,10 @@
 import express from "express";
-import { prisma } from "./db";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import authRoutes from "./routes/auth";
+import authRoutes from "./routes/auth"; 
+import taskRoutes from "./routes/tasks";       
+
 
 
 dotenv.config();
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // Health check route
 app.get("/health", (_req, res) => res.send("ok"));

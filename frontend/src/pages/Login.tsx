@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "react-toastify";
 import {
   Card,
   CardHeader,
@@ -12,8 +13,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 export function Login() {
   const [email, setEmail] = useState("");
@@ -31,20 +30,18 @@ export function Login() {
     e.preventDefault();
 
     try {
-      await axios.post(
+      const response = await axios.post(
         "http://localhost:5001/api/auth/login",
-        {
-          email,
-          password,
-        },
+        { email, password },
         { withCredentials: true }
       );
-      toast.success("Login realizado com sucesso!");
+
+      toast.success(`Bem-vindo! Você entrou como ${response.data.role}`);
       login();
       navigate("/");
-    } catch (error) {
+    } catch (error: any) {
       toast.error(
-        "Falha no login. Verifique suas credenciais e tente novamente."
+        error.response?.data?.message || "Falha no login. Verifique suas credenciais."
       );
     }
   };
@@ -90,13 +87,12 @@ export function Login() {
 
             <div className="text-center text-sm mt-4">
               <span className="text-slate-500">Não tem conta? </span>
-              <Link
-                to="/register"
-                className="text-blue-600 hover:text-blue-400 font-medium"
-              >
-                Cadastre-se
+              <Link to="/register" className="text-blue-600 hover:text-blue-400 font-medium">
+                Crie uma conta
               </Link>
             </div>
+
+            
           </form>
         </CardContent>
       </Card>

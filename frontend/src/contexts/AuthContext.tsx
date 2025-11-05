@@ -1,35 +1,67 @@
-import { createContext, useState, useContext, type ReactNode, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import axios from 'axios';
 
-type AuthContextType = {
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'DEV';
+}
+
+interface AuthContextType {
+  user: User | null;
   isLoggedIn: boolean;
+  isAdmin: boolean;
   login: () => void;
   logout: () => void;
-};
+  checkAuth: () => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const navigate = useNavigate();
 
-  const login = useCallback(() => {
-    setIsLoggedIn(true);
-    navigate('/');
-  }, []);
-
-  const logout = useCallback(() => {
-    setIsLoggedIn(false);
-  }, []);
-
-  const value = {
-    isLoggedIn,
-    login,
-    logout
+  const checkAuth = async () => {
+    try {
+      const response = await axios.get('http://localhost:5001/api/auth/me', {
+        withCredentials: true,
+      });
+      setUser(response.data);
+      setIsLoggedIn(true);
+    } catch (error) {
+      setUser(null);
+      setIsLoggedIn(false);
+    }
   };
 
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const login = () => {
+    checkAuth();
+  };
+
+  const logout = async () => {
+    try {
+      await axios.post('http://localhost:5001/api/auth/logout', {}, {
+        withCredentials: true,
+      });
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      setUser(null);
+      setIsLoggedIn(false);
+    }
+  };
+
+  const isAdmin = user?.role === 'ADMIN';
+
+
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, isLoggedIn, isAdmin, login, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
@@ -37,8 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('');
+  if (!context) {
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   return context;
 }
