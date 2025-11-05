@@ -21,9 +21,10 @@ interface BoardColumnProps {
     tasks: Task[];
   };
   onAddTask: (columnId: string) => void;
+  canAddTask?: boolean;
 }
 
-export function BoardColumn({ column, onAddTask }: BoardColumnProps) {
+export function BoardColumn({ column, onAddTask, canAddTask = true }: BoardColumnProps) {
   const { setNodeRef } = useDroppable({
     id: column.id,
   });
@@ -38,14 +39,16 @@ export function BoardColumn({ column, onAddTask }: BoardColumnProps) {
               {column.tasks.length}
             </span>
           </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
-            onClick={() => onAddTask(column.id)}
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          {canAddTask && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              onClick={() => onAddTask(column.id)}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent ref={setNodeRef} className="space-y-2 min-h-[200px]">
@@ -57,6 +60,11 @@ export function BoardColumn({ column, onAddTask }: BoardColumnProps) {
             <TaskCard key={task.id} task={task} />
           ))}
         </SortableContext>
+        {column.tasks.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">
+            Nenhuma tarefa
+          </p>
+        )}
       </CardContent>
     </Card>
   );
