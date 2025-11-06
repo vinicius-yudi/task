@@ -1,4 +1,4 @@
-# Task Board (Kanban)
+# Taskyoshi
 
 Aplicação full-stack (React + Node/Express + Prisma/PostgreSQL) para gerenciar colunas e tarefas em estilo Kanban, com autenticação via JWT (cookie) e controle de acesso por papéis (ADMIN/DEV).
 
