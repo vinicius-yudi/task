@@ -13,22 +13,43 @@ enum Role {
 }
 
 model User {
-  id           String @id @default(uuid())
+  id           String   @id @default(uuid())
   name         String
-  email        String @unique
+  email        String   @unique
   passwordHash String
-  role         Role   @default(DEV)
+  role         Role     @default(DEV)
   tasks        Task[]
+  columns      Column[]
+}
+
+model Column {
+  id     String @id @default(uuid())
+  title  String
+  order  Int 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tasks  Task[]
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, order])
+
 }
 
 model Task {
   id          String   @id @default(uuid())
   title       String
-  description String
+  description String?  
   done        Boolean  @default(false)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  columnId    String   
+  column      Column   @relation(fields: [columnId], references: [id])
+  order       Int      
 
   @@index([userId])
+  @@index([columnId])
+  @@unique([columnId, order])
 }
