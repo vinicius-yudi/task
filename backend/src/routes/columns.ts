@@ -8,9 +8,7 @@ const router = express.Router();
 // Rota acessível por ADMIN e DEV
 router.get('/', protect, async (req, res) => {
     try {
-        const userId = (req as CustomRequest).user!.id;
         const columns = await prisma.column.findMany({
-            where: { userId },
             orderBy: { order: 'asc' },
             include: {
                 tasks: {
@@ -110,8 +108,10 @@ router.delete('/:id', protect, checkRole([Role.ADMIN]), async (req, res) => {
             return res.status(404).json({ message: 'Coluna não encontrada' });
         }
 
-        await prisma.column.delete({
-            where: { id: id },
+        await prisma.$transaction(async (prisma) => {
+            await prisma.task.deleteMany({
+                where: { columnId: id },
+            });
         });
 
         return res.status(204).send();

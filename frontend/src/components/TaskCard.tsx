@@ -2,11 +2,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, CheckCircle } from "lucide-react";
-import type { Task } from "@/types"; 
+import type { Task } from "@/types";
 
 interface TaskCardProps {
-  task: Task; 
-  onClick: (task: Task) => void; 
+  task: Task;
+  onClick: (task: Task) => void;
   onToggleDone: (taskId: string, done: boolean) => void;
 }
 
@@ -16,7 +16,7 @@ export function TaskCard({ task, onClick, onToggleDone }: TaskCardProps) {
     listeners,
     setNodeRef,
     transform,
-    transition, 
+    transition,
     isDragging,
   } = useSortable({ id: task.id });
 
@@ -28,10 +28,12 @@ export function TaskCard({ task, onClick, onToggleDone }: TaskCardProps) {
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card 
+      <Card
         className={
-          "mb-2 cursor-pointer hover:shadow-md transition-shadow " + 
-          (task.done ? "border-green-500 bg-green-50/50 dark:bg-green-900/50" : "")
+          "mb-2 cursor-pointer hover:shadow-md transition-shadow " +
+          (task.done
+            ? "border-green-500 bg-green-50/50 dark:bg-green-900/50"
+            : "")
         }
       >
         <CardContent className="p-3">
@@ -44,7 +46,13 @@ export function TaskCard({ task, onClick, onToggleDone }: TaskCardProps) {
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </button>
             <div className="flex-1" onClick={() => onClick(task)}>
-              <h4 className={`font-medium text-sm ${task.done ? "line-through text-muted-foreground" : ""}`}>{task.title}</h4>
+              <h4
+                className={`font-medium text-sm ${
+                  task.done ? "line-through text-muted-foreground" : ""
+                }`}
+              >
+                {task.title}
+              </h4>
               {task.description && (
                 <p className="text-xs text-muted-foreground mt-1">
                   {task.description}
@@ -55,15 +63,21 @@ export function TaskCard({ task, onClick, onToggleDone }: TaskCardProps) {
             <button
               type="button"
               onClick={(e) => {
-                e.stopPropagation(); // Evitar que o clique abra o modal de edição
+                e.stopPropagation();
                 onToggleDone(task.id, !task.done);
               }}
-              title={task.done ? "Marcar como Pendente" : "Marcar como Concluída"}
+              title={
+                task.done ? "Marcar como Concluída" : "Marcar como Pendente"
+              }
               className="shrink-0 transition-colors mt-1"
             >
-              <CheckCircle 
-                className={`h-5 w-5 ${task.done ? 'text-green-600' : 'text-muted-foreground/50 hover:text-green-600'}`} 
-                fill={task.done ? 'currentColor' : 'none'}
+              <CheckCircle
+                className={`h-5 w-5 ${
+                  task.done
+                    ? "text-green-600"
+                    : "text-muted-foreground/50 hover:text-green-600"
+                }`}
+                fill={task.done ? "currentColor" : "none"}
               />
             </button>
           </div>

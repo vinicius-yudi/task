@@ -41,7 +41,8 @@ export function Login() {
       navigate("/");
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Falha no login. Verifique suas credenciais."
+        error.response?.data?.message ||
+          "Falha no login. Verifique suas credenciais."
       );
     }
   };
@@ -87,12 +88,13 @@ export function Login() {
 
             <div className="text-center text-sm mt-4">
               <span className="text-slate-500">Não tem conta? </span>
-              <Link to="/register" className="text-blue-600 hover:text-blue-400 font-medium">
+              <Link
+                to="/register"
+                className="text-blue-600 hover:text-blue-400 font-medium"
+              >
                 Crie uma conta
               </Link>
             </div>
-
-            
           </form>
         </CardContent>
       </Card>

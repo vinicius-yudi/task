@@ -14,48 +14,47 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Trash2 } from "lucide-react";
 
-
 interface EditTaskDialogProps {
-    task: Task;
-    isOpen: boolean;
-    onOpenChange: (open: boolean) => void;
-    onSave: (taskId: string, title: string, description: string) => void;
-    onDelete: (taskId: string) => void;
-    isSaving: boolean;
-    isDeleting: boolean;
-    isAdmin: boolean;
+  task: Task;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (taskId: string, title: string, description: string) => void;
+  onDelete: (taskId: string) => void;
+  isSaving: boolean;
+  isDeleting: boolean;
+  isAdmin: boolean;
 }
 
 export function EditTaskDialog({
-    task,
-    isOpen,
-    onOpenChange,
-    onSave,
-    onDelete,
-    isSaving,
-    isDeleting,
-    isAdmin,
+  task,
+  isOpen,
+  onOpenChange,
+  onSave,
+  onDelete,
+  isSaving,
+  isDeleting,
+  isAdmin,
 }: EditTaskDialogProps) {
-    const [title, setTitle] = React.useState(task.title);
-    const [description, setDescription] = React.useState(task.description || "");
+  const [title, setTitle] = React.useState(task.title);
+  const [description, setDescription] = React.useState(task.description || "");
 
-    React.useEffect(() => {
-        setTitle(task.title);
-        setDescription(task.description || "");
-    }, [task]);
+  React.useEffect(() => {
+    setTitle(task.title);
+    setDescription(task.description || "");
+  }, [task]);
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSave(task.id, title, description);
-    };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(task.id, title, description);
+  };
 
-    const handleDelete = () => {
-        if (window.confirm("Are you sure you want to delete this task?")) {
-            onDelete(task.id);
-        }
-    };
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      onDelete(task.id);
+    }
+  };
 
-    return (
+  return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -63,6 +62,7 @@ export function EditTaskDialog({
             {isAdmin ? "Editar Tarefa" : "Visualizar Tarefa"}
             {isAdmin && (
               <Button
+                className="mr-4"
                 variant="destructive"
                 size="icon-sm"
                 onClick={handleDelete}
@@ -101,11 +101,7 @@ export function EditTaskDialog({
             />
           </div>
           <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Fechar
-              </Button>
-            </DialogClose>
+            <DialogClose asChild></DialogClose>
             {isAdmin && (
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? "Salvando..." : "Salvar alterações"}
@@ -117,5 +113,3 @@ export function EditTaskDialog({
     </Dialog>
   );
 }
-    
-    

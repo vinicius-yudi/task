@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { ThemeProvider, useTheme } from '@/components/theme-provider';
+import { ThemeProvider, useTheme } from '@/components/Theme-provider';
 
 axios.defaults.withCredentials = true;
 

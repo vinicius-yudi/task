@@ -85,7 +85,10 @@ export function Home() {
     const overId = over.id as string;
 
     const activeColumnId = findColumnIdByTaskId(activeId);
-    const overColumnId = findColumnIdByTaskId(overId) || (over.data.current?.sortable?.containerId as string) || overId;
+    const overColumnId =
+      findColumnIdByTaskId(overId) ||
+      (over.data.current?.sortable?.containerId as string) ||
+      overId;
 
     if (!activeColumnId || !overColumnId) return;
 
@@ -102,10 +105,10 @@ export function Home() {
 
     // Se arrastou sobre a própria coluna (e não sobre uma tarefa) ou a coluna está vazia
     if (overIndex === -1) {
-        // Se a coluna de destino está vazia, insere no final (index 0)
-        overIndex = newColumn.tasks.length;
+      // Se a coluna de destino está vazia, insere no final (index 0)
+      overIndex = newColumn.tasks.length;
     }
-    
+
     const newOrder = overIndex;
     const newColumnId = overColumnId;
 
@@ -121,23 +124,31 @@ export function Home() {
 
       const targetCol = newCols.find((col) => col.id === newColumnId);
       if (targetCol) {
-        // 2.2. Insere na nova coluna/posição
+        //Insere na nova coluna/posição
         const newTasks = [...targetCol.tasks];
-        const updatedActiveTask = { ...activeTask, columnId: newColumnId, order: newOrder };
+        const updatedActiveTask = {
+          ...activeTask,
+          columnId: newColumnId,
+          order: newOrder,
+        };
 
         // Se a coluna de destino é a mesma e só está reordenando
         if (activeColumnId === newColumnId) {
-            const tempTasks = arrayMove(oldColumn.tasks, activeIndex, newOrder).filter(t => t.id !== activeId);
-            tempTasks.splice(newOrder, 0, updatedActiveTask as Task);
-             return newCols.map((col) => 
-                col.id === newColumnId ? { ...col, tasks: tempTasks } : col
-            );
+          const tempTasks = arrayMove(
+            oldColumn.tasks,
+            activeIndex,
+            newOrder
+          ).filter((t) => t.id !== activeId);
+          tempTasks.splice(newOrder, 0, updatedActiveTask as Task);
+          return newCols.map((col) =>
+            col.id === newColumnId ? { ...col, tasks: tempTasks } : col
+          );
         } else {
-            // Movendo para outra coluna
-            newTasks.splice(newOrder, 0, updatedActiveTask as Task);
-            return newCols.map((col) => 
-                col.id === newColumnId ? { ...col, tasks: newTasks } : col
-            );
+          // Movendo para outra coluna
+          newTasks.splice(newOrder, 0, updatedActiveTask as Task);
+          return newCols.map((col) =>
+            col.id === newColumnId ? { ...col, tasks: newTasks } : col
+          );
         }
       }
       return newCols;
@@ -146,22 +157,22 @@ export function Home() {
     //Chamar API para persistir
     try {
       // O backend cuidará do reindexamento e retornará o estado atualizado
-      const response = await axios.put(`${API_URL}/tasks/${activeId}/move`, { 
-        newColumnId, 
-        newOrder 
+      const response = await axios.put(`${API_URL}/tasks/${activeId}/move`, {
+        newColumnId,
+        newOrder,
       });
       // Substituir o estado local com a resposta do backend (colunas atualizadas)
-      setColumns(response.data); 
+      setColumns(response.data);
       toast.success("Tarefa movida com sucesso!");
     } catch (error) {
       console.error("Erro ao persistir movimento:", error);
       toast.error("Erro ao mover tarefa. Recarregue a página.");
       // Se a persistência falhar, re-fetch para reverter ao estado real
-      fetchColumns(); 
+      fetchColumns();
     }
   };
 
-  // --- Funções de CRUD de Tarefas ---
+  //Funções de CRUD de Tarefas
   const handleOpenTaskDialog = (task: Task) => {
     setSelectedTask(task);
     setIsTaskDialogOpen(true);
@@ -169,29 +180,27 @@ export function Home() {
 
   const handleCreateTask = async (columnId: string) => {
     if (!isAdmin) {
-      toast.error('Apenas administradores podem criar tarefas');
+      toast.error("Apenas administradores podem criar tarefas");
       return;
     }
     try {
-        const response = await axios.post<Task>(`${API_URL}/tasks`, {
-            title: "Nova Tarefa",
-            description: "Clique para editar",
-            columnId: columnId,
-        });
+      const response = await axios.post<Task>(`${API_URL}/tasks`, {
+        title: "Nova Tarefa",
+        description: "Clique para editar",
+        columnId: columnId,
+      });
 
-        const newTask = response.data;
+      const newTask = response.data;
 
-        setColumns((prev) =>
-            prev.map((col) =>
-                col.id === columnId
-                    ? { ...col, tasks: [...col.tasks, newTask] }
-                    : col
-            )
-        );
-        toast.success("Tarefa criada com sucesso!");
+      setColumns((prev) =>
+        prev.map((col) =>
+          col.id === columnId ? { ...col, tasks: [...col.tasks, newTask] } : col
+        )
+      );
+      toast.success("Tarefa criada com sucesso!");
     } catch (error) {
-        console.error("Erro ao criar tarefa:", error);
-        toast.error("Falha ao criar tarefa.");
+      console.error("Erro ao criar tarefa:", error);
+      toast.error("Falha ao criar tarefa.");
     }
   };
 
@@ -213,9 +222,7 @@ export function Home() {
       setColumns((prev) =>
         prev.map((col) => ({
           ...col,
-          tasks: col.tasks.map((t) =>
-            t.id === taskId ? updatedTask : t
-          ),
+          tasks: col.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
         }))
       );
       toast.success("Tarefa atualizada!");
@@ -232,23 +239,23 @@ export function Home() {
     if (!isAdmin) return;
     setIsDeleting(true);
     try {
-        await axios.delete(`${API_URL}/tasks/${taskId}`);
-        
-        // Simplesmente remove a tarefa do estado e re-fetch para reindexação (mais seguro)
-        // Ou remove otimisticamente
-        setColumns((prev) => {
-            return prev.map((col) => ({
-                ...col,
-                tasks: col.tasks.filter((t) => t.id !== taskId)
-            }));
-        });
+      await axios.delete(`${API_URL}/tasks/${taskId}`);
 
-        toast.success("Tarefa excluída!");
-        setIsTaskDialogOpen(false);
-        fetchColumns();
+      // Simplesmente remove a tarefa do estado e re-fetch para reindexação (mais seguro)
+      // Ou remove otimisticamente
+      setColumns((prev) => {
+        return prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.filter((t) => t.id !== taskId),
+        }));
+      });
+
+      toast.success("Tarefa excluída!");
+      setIsTaskDialogOpen(false);
+      fetchColumns();
     } catch (error) {
-        console.error("Erro ao deletar tarefa:", error);
-        toast.error("Falha ao deletar tarefa.");
+      console.error("Erro ao deletar tarefa:", error);
+      toast.error("Falha ao deletar tarefa.");
     } finally {
       setIsDeleting(false);
     }
@@ -256,79 +263,86 @@ export function Home() {
 
   const handleToggleTaskDone = async (taskId: string, done: boolean) => {
     try {
-        const response = await axios.put<Task>(`${API_URL}/tasks/${taskId}/done`, { done });
-        const updatedTask = response.data;
+      const response = await axios.put<Task>(
+        `${API_URL}/tasks/${taskId}/done`,
+        { done }
+      );
+      const updatedTask = response.data;
 
-        setColumns((prev) =>
-            prev.map((col) => ({
-                ...col,
-                tasks: col.tasks.map((t) =>
-                    t.id === taskId ? updatedTask : t
-                ),
-            }))
-        );
+      setColumns((prev) =>
+        prev.map((col) => ({
+          ...col,
+          tasks: col.tasks.map((t) => (t.id === taskId ? updatedTask : t)),
+        }))
+      );
 
-        toast.success(`Tarefa marcada como ${done ? 'Concluída' : 'Pendente'}!`);
+      toast.success(`Tarefa marcada como ${done ? "Concluída" : "Pendente"}!`);
     } catch (error) {
-        console.error("Erro ao atualizar status:", error);
-        toast.error("Falha ao atualizar status da tarefa.");
+      console.error("Erro ao atualizar status:", error);
+      toast.error("Falha ao atualizar status da tarefa.");
     }
-  }
-
+  };
 
   //Funções de CRUD de Colunas
   const handleOpenColumnEdit = (column: Column) => {
     if (!isAdmin) return;
     setSelectedColumn(column);
     setIsColumnDialogOpen(true);
-  }
+  };
 
   const handleUpdateColumn = async (columnId: string, newTitle: string) => {
     if (!isAdmin || !selectedColumn) return;
     setIsSaving(true);
     try {
-        const response = await axios.put<Column>(`${API_URL}/columns/${columnId}`, { 
-            title: newTitle,
-        });
+      const response = await axios.put<Column>(
+        `${API_URL}/columns/${columnId}`,
+        {
+          title: newTitle,
+        }
+      );
 
-        const updatedColumn = response.data;
+      const updatedColumn = response.data;
 
-        setColumns((prev) => 
-            prev.map((col) => 
-                col.id === columnId ? { ...updatedColumn, tasks: col.tasks } : col
-            )
-        );
+      setColumns((prev) =>
+        prev.map((col) =>
+          col.id === columnId ? { ...updatedColumn, tasks: col.tasks } : col
+        )
+      );
 
-        toast.success("Coluna atualizada!");
-        setIsColumnDialogOpen(false);
+      toast.success("Coluna atualizada!");
+      setIsColumnDialogOpen(false);
     } catch (error) {
-        console.error("Erro ao atualizar coluna:", error);
-        toast.error("Falha ao atualizar coluna.");
+      console.error("Erro ao atualizar coluna:", error);
+      toast.error("Falha ao atualizar coluna.");
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleDeleteColumn = async (columnId: string) => {
     if (!isAdmin) return;
-    if (!window.confirm("ATENÇÃO: Excluir esta coluna também EXCLUIRÁ TODAS as tarefas contidas nela. Continuar?")) return;
-    
+    if (
+      !window.confirm(
+        "ATENÇÃO: Excluir esta coluna também EXCLUIRÁ TODAS as tarefas contidas nela. Continuar?"
+      )
+    )
+      return;
+
     try {
-        await axios.delete(`${API_URL}/columns/${columnId}`);
-        
-        setColumns((prev) => prev.filter((col) => col.id !== columnId));
+      await axios.delete(`${API_URL}/columns/${columnId}`);
 
-        toast.success("Coluna excluída com sucesso.");
+      setColumns((prev) => prev.filter((col) => col.id !== columnId));
+
+      toast.success("Coluna excluída com sucesso.");
     } catch (error) {
-        console.error("Erro ao deletar coluna:", error);
-        toast.error("Falha ao deletar coluna.");
+      console.error("Erro ao deletar coluna:", error);
+      toast.error("Falha ao deletar coluna.");
     }
-  }
-
+  };
 
   const handleAddColumn = async () => {
     if (!isAdmin) {
-      toast.error('Apenas administradores podem criar colunas');
+      toast.error("Apenas administradores podem criar colunas");
       return;
     }
 
@@ -338,13 +352,13 @@ export function Home() {
       });
 
       setColumns([...columns, { ...response.data, tasks: [] }]);
-      toast.success('Coluna criada com sucesso!');
+      toast.success("Coluna criada com sucesso!");
     } catch (error) {
       console.error("Erro ao criar coluna:", error);
-      toast.error('Falha ao criar coluna.');
+      toast.error("Falha ao criar coluna.");
     }
   };
-  
+
   if (isFetching) {
     //
     return <div>Loading...</div>;
@@ -366,9 +380,7 @@ export function Home() {
           <p className="text-xs text-muted-foreground">{user?.email}</p>
           <span
             className={`inline-block mt-2 px-2 py-1 text-xs rounded font-semibold ${
-              isAdmin
-                ? "bg-purple-500 text-white"
-                : "bg-blue-500 text-white"
+              isAdmin ? "bg-purple-500 text-white" : "bg-blue-500 text-white"
             }`}
           >
             {user?.role}
@@ -377,7 +389,11 @@ export function Home() {
 
         <div className="flex-1" />
 
-        <Button variant="ghost" className="w-full justify-start" onClick={logout}>
+        <Button
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={logout}
+        >
           <LogOut className="mr-2 h-4 w-4" />
           Logout
         </Button>
@@ -416,7 +432,13 @@ export function Home() {
           </div>
 
           <DragOverlay>
-            {activeTask ? <TaskCard task={activeTask} onClick={() => {}} onToggleDone={() => {}} /> : null} 
+            {activeTask ? (
+              <TaskCard
+                task={activeTask}
+                onClick={() => {}}
+                onToggleDone={() => {}}
+              />
+            ) : null}
           </DragOverlay>
         </DndContext>
       </div>

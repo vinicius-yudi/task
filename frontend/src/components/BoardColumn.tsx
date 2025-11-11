@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Pencil } from "lucide-react"; 
+import { Plus, Trash2, Pencil } from "lucide-react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -10,12 +10,12 @@ import { TaskCard } from "./TaskCard";
 import type { Column, Task } from "@/types";
 
 interface BoardColumnProps {
-  column: Column; 
+  column: Column;
   onAddTask: (columnId: string) => void;
-  onTaskClick: (task: Task) => void; 
-  onToggleTaskDone: (taskId: string, done: boolean) => void; 
-  onEditColumn: (column: Column) => void; 
-  onDeleteColumn: (columnId: string) => void; 
+  onTaskClick: (task: Task) => void;
+  onToggleTaskDone: (taskId: string, done: boolean) => void;
+  onEditColumn: (column: Column) => void;
+  onDeleteColumn: (columnId: string) => void;
   canManageColumns: boolean;
 }
 
@@ -54,7 +54,7 @@ export function BoardColumn({
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="destructive" // Usar variante destrutiva para exclusão
+                  variant="destructive"
                   size="icon-sm"
                   title="Excluir Coluna"
                   onClick={() => onDeleteColumn(column.id)}
@@ -85,9 +85,9 @@ export function BoardColumn({
           strategy={verticalListSortingStrategy}
         >
           {column.tasks.map((task) => (
-            <TaskCard 
-              key={task.id} 
-              task={task} 
+            <TaskCard
+              key={task.id}
+              task={task}
               onClick={onTaskClick}
               onToggleDone={onToggleTaskDone}
             />

@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import axios from "axios";
@@ -85,7 +91,10 @@ export function Register() {
 
             <div className="text-center text-sm mt-4">
               <span className="text-slate-500">Já tem conta? </span>
-              <Link to="/login" className="text-blue-600 hover:text-blue-400 font-medium">
+              <Link
+                to="/login"
+                className="text-blue-600 hover:text-blue-400 font-medium"
+              >
                 Faça Login
               </Link>
             </div>
