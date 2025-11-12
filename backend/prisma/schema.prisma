@@ -12,6 +12,20 @@ enum Role {
   DEV
 }
 
+model Board {
+  id           String   @id @default(uuid())
+  title        String
+  slug         String   @unique // Para URLs amigáveis ou identificação única
+  isMainBoard  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  userId       String 
+  user         User     @relation(fields: [userId], references: [id])
+  columns      Column[]
+
+  @@index([userId])
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -19,35 +33,36 @@ model User {
   passwordHash String
   role         Role     @default(DEV)
   tasks        Task[]
-  columns      Column[]
+  boards       Board[] 
 }
 
 model Column {
-  id     String @id @default(uuid())
-  title  String
-  order  Int 
+  id        String @id @default(uuid())
+  title     String
+  order     Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  tasks  Task[]
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  tasks     Task[]
+  boardId   String? // chave estrangeira para Board
+  board     Board? @relation(fields: [boardId], references: [id])
 
-  @@unique([userId, order])
 
+  @@unique([boardId, order])
+  @@index([boardId])
 }
 
 model Task {
   id          String   @id @default(uuid())
   title       String
-  description String?  
+  description String?
   done        Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id])
-  columnId    String   
+  columnId    String
   column      Column   @relation(fields: [columnId], references: [id])
-  order       Int      
+  order       Int
 
   @@index([userId])
   @@index([columnId])

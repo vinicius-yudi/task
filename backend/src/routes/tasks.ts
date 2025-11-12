@@ -5,7 +5,7 @@ import { prisma } from "../db";
 
 const router = express.Router();
 
-// Rota para listar todas as tarefas
+// Rota para listar todas as tarefas (de um board específico, opcional)
 router.get("/", protect, async (req, res) => {
   try {
     const userId = (req as CustomRequest).user!.id;
@@ -39,6 +39,7 @@ router.get("/:id", protect, async (req, res) => {
       return res.status(400).json({ message: "ID da tarefa é obrigatório" });
     }
 
+    // A tarefa deve pertencer ao usuário
     const task = await prisma.task.findFirst({
       where: { id, userId },
       include: {
@@ -68,13 +69,20 @@ router.post("/", protect, checkRole([Role.ADMIN]), async (req, res) => {
         .status(400)
         .json({ message: "Título e ID da coluna são obrigatórios" });
     }
-
+    
+    // Verificar se a coluna pertence a um board DO QUAL o usuário logado é o owner.
     const column = await prisma.column.findFirst({
-      where: { id: columnId, userId },
+        where: { id: columnId },
+        include: {
+            board: {
+                select: { userId: true }
+            }
+        }
     });
 
-    if (!column) {
-      return res.status(404).json({ message: "Coluna não encontrada" });
+    // Somente o owner do board (userId) pode criar tarefas nele (ADMIN)
+    if (!column || !column.board || column.board.userId !== userId) {
+      return res.status(403).json({ message: 'Acesso negado: Somente o owner do board pode criar tarefas.' });
     }
 
     // Determina a ordem da nova tarefa
@@ -109,19 +117,28 @@ router.put("/:id", protect, checkRole([Role.ADMIN]), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
+    const userId = (req as CustomRequest).user!.id;
+
 
     if (!id) {
       return res.status(400).json({ message: "ID da tarefa é obrigatório" });
     }
 
-    // Busca a tarefa para verificar se existe (sem filtro de userId)
+    // Busca a tarefa, verifica propriedade e o owner do Board
     const task = await prisma.task.findFirst({
-      where: { id: id },
+      where: { id: id, userId },
+      select: { column: { select: { board: { select: { userId: true, isMainBoard: true } } } }, id: true, title: true, description: true }
     });
 
     if (!task) {
-      return res.status(404).json({ message: "Tarefa não encontrada" });
+      return res.status(404).json({ message: "Tarefa não encontrada ou acesso negado" });
     }
+
+    // Verifica se o usuário logado é o owner do board 
+    if (!task.column.board || task.column.board.userId !== userId) {
+         return res.status(403).json({ message: "Acesso negado: Apenas o owner do board pode editar tarefas." });
+    }
+
 
     // Atualiza a tarefa
     const updatedTask = await prisma.task.update({
@@ -134,7 +151,7 @@ router.put("/:id", protect, checkRole([Role.ADMIN]), async (req, res) => {
 
     return res.json(updatedTask);
   } catch (error) {
-    console.error(error);
+    console.error("Erro ao atualizar tarefa:", error);
     return res.status(500).json({ message: "Erro ao atualizar tarefa" });
   }
 });
@@ -144,6 +161,7 @@ router.put("/:id/move", protect, async (req, res) => {
   try {
     const { id } = req.params;
     const { newColumnId, newOrder } = req.body;
+    const userId = (req as CustomRequest).user!.id;
 
     if (!newColumnId || newOrder === undefined) {
       return res
@@ -155,52 +173,66 @@ router.put("/:id/move", protect, async (req, res) => {
       return res.status(400).json({ message: "ID da tarefa é obrigatório" });
     }
 
+    // Busca a tarefa para verificar propriedade
     const task = await prisma.task.findFirst({
-      where: { id },
+      where: { id, userId },
       select: { id: true, columnId: true, order: true },
     });
 
     if (!task) {
-      return res.status(404).json({ message: "Tarefa não encontrada" });
+      return res.status(404).json({ message: "Tarefa não encontrada ou acesso negado" });
+    }
+    
+    // Busca o board da coluna atual para checar a propriedade
+    const oldColumnBoard = await prisma.column.findUnique({
+        where: { id: task.columnId },
+        select: { boardId: true, board: { select: { userId: true, isMainBoard: true } } }
+    });
+
+    // Busca o board da nova coluna para checar a propriedade
+    const newColumnBoard = await prisma.column.findUnique({
+        where: { id: newColumnId },
+        select: { boardId: true, board: { select: { userId: true, isMainBoard: true } } }
+    });
+
+    if (!oldColumnBoard || !newColumnBoard) {
+        return res.status(404).json({ message: "Coluna não encontrada" });
     }
 
+    const isOwnerOfOldBoard = !!oldColumnBoard.board && oldColumnBoard.board.userId === userId;
+    const isOwnerOfNewBoard = !!newColumnBoard.board && newColumnBoard.board.userId === userId;
+    
+    if (!isOwnerOfOldBoard || !isOwnerOfNewBoard) {
+        return res.status(403).json({ message: "Acesso negado: Você só pode mover tarefas entre boards que você possui." });
+    }
+    
     const oldColumnId = task.columnId;
     const oldOrder = task.order;
+    const boardId = oldColumnBoard.boardId; 
+    const oldBoardIsMain = !!oldColumnBoard.board?.isMainBoard;
 
     await prisma.$transaction(async (prisma) => {
+      // Lógica de reindexação (inalterada)
       if (oldColumnId === newColumnId) {
         if (newOrder < oldOrder) {
             await prisma.task.updateMany({
-                where: {
-                    columnId: oldColumnId,
-                    order: { gte: newOrder, lt: oldOrder },
-                },
+                where: { columnId: oldColumnId, order: { gte: newOrder, lt: oldOrder } },
                 data: { order: { increment: 1 } },
             });
         } else if (newOrder > oldOrder) {
-            // Se movendo para baixo, itens entre oldOrder e newOrder sobem
             await prisma.task.updateMany({
-                where: {
-                    columnId: oldColumnId,
-                    order: { gt: oldOrder, lte: newOrder },
-                },
+                where: { columnId: oldColumnId, order: { gt: oldOrder, lte: newOrder } },
                 data: { order: { decrement: 1 } },
             });
         }
       } else {
         await prisma.task.updateMany({
-          where: {
-            columnId: oldColumnId,
-            order: { gt: oldOrder },
-          },
+          where: { columnId: oldColumnId, order: { gt: oldOrder } },
           data: { order: { decrement: 1 } },
         });
 
         await prisma.task.updateMany({
-          where: {
-            columnId: newColumnId,
-            order: { gte: newOrder },
-          },
+          where: { columnId: newColumnId, order: { gte: newOrder } },
           data: { order: { increment: 1 } },
         });
       }
@@ -211,12 +243,25 @@ router.put("/:id/move", protect, async (req, res) => {
       });
     });
 
-    // Retornar o estado completo do quadro (sem filtro userId, igual ao GET /columns)
+    // Após transação, retornar o estado completo das colunas do BOARD ATUAL
     const columns = await prisma.column.findMany({
+        where: { boardId },
         orderBy: { order: "asc" },
         include: {
           tasks: {
             orderBy: { order: "asc" },
+            where: oldBoardIsMain ? undefined : { userId },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                done: true,
+                createdAt: true,
+                updatedAt: true,
+                userId: true,
+                columnId: true,
+                order: true,
+            }
           },
         },
     });
@@ -233,27 +278,23 @@ router.put("/:id/done", protect, async (req, res) => {
     try {
         const { id } = req.params;
         const { done } = req.body;
+        const userId = (req as CustomRequest).user!.id;
         
-        if (!id) {
-            return res.status(400).json({ message: "ID da tarefa é obrigatório" });
+        if (!id || typeof done !== 'boolean') {
+            return res.status(400).json({ message: "ID da tarefa e status 'done' são obrigatórios" });
         }
-
-        const taskId = id as string;
         
-        if (typeof done !== 'boolean') {
-            return res.status(400).json({ message: "O status 'done' é obrigatório e deve ser um booleano" });
-        }
-
+        // 1. Verifica se a tarefa pertence ao usuário
         const task = await prisma.task.findFirst({
-            where: { id: taskId },
+            where: { id: id, userId },
         });
 
         if (!task) {
-            return res.status(404).json({ message: "Tarefa não encontrada" });
+            return res.status(404).json({ message: "Tarefa não encontrada ou acesso negado" });
         }
         
         const updatedTask = await prisma.task.update({
-            where: { id: taskId },
+            where: { id: id },
             data: { done },
         });
 
@@ -274,28 +315,32 @@ router.delete("/:id", protect, checkRole([Role.ADMIN]), async (req, res) => {
       return res.status(400).json({ message: "ID da tarefa é obrigatório" });
     }
 
+    // 1. Busca a tarefa para verificar propriedade e o owner do Board
     const task = await prisma.task.findFirst({
         where: { id: id, userId },
-        select: { order: true, columnId: true },
+        select: { order: true, columnId: true, id: true, column: { select: { board: { select: { userId: true } } } } },
     });
 
     if (!task) {
-      return res.status(404).json({ message: "Tarefa não encontrada" });
+      return res.status(404).json({ message: "Tarefa não encontrada ou acesso negado" });
+    }
+    
+    // 2. Verifica se o usuário logado é o owner do Board
+    if (!task.column.board || task.column.board.userId !== userId) {
+        return res.status(403).json({ message: "Acesso negado: Apenas o owner do board pode deletar tarefas." });
     }
 
+
     await prisma.$transaction(async (prisma) => {
-      await prisma.task.delete({
-        where: { id },
+      await prisma.task.delete({ where: { id } });
+      
+      // Reindexa as tarefas restantes na coluna
+      await prisma.task.updateMany({
+          where: { columnId: task.columnId, order: { gt: task.order } },
+          data: { order: { decrement: 1 } },
       });
     });
 
-    await prisma.task.updateMany({
-        where: {
-            columnId: task.columnId,
-            order: { gt: task.order },
-        },
-        data: { order: { decrement: 1 } },
-    });
 
     return res.json({ id });
     

@@ -1,6 +1,7 @@
+//
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ModeToggle } from "@/components/Mode-toggle";
 import { BoardColumn } from "@/components/BoardColumn";
@@ -16,16 +17,20 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { TaskCard } from "@/components/TaskCard";
-import type { Column, Task } from "@/types";
+import type { Column, Task, Board } from "@/types";
 import axios from "axios";
 import { EditTaskDialog } from "@/components/EditTaskDialog";
 import { EditColumnDialog } from "@/components/EditColumnDialog";
+import { Separator } from "@/components/ui/separator";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export function Home() {
   const { logout, isAdmin, user } = useAuth();
   const [columns, setColumns] = useState<Column[]>([]);
+  const [boards, setBoards] = useState<Board[]>([]);
+  const [currentBoard, setCurrentBoard] = useState<Board | null>(null);
+
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isColumnDialogOpen, setIsColumnDialogOpen] = useState(false);
@@ -35,22 +40,50 @@ export function Home() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
 
-  const fetchColumns = async () => {
+  const fetchBoards = async () => {
+    try {
+      const response = await axios.get<Board[]>(`${API_URL}/boards`);
+      setBoards(response.data);
+      // Define o board principal (o primeiro da lista) como o board atual se não houver um
+      if (!currentBoard && response.data.length > 0) {
+        setCurrentBoard(response.data[0]);
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Erro ao carregar boards:", error);
+      toast.error("Erro ao carregar boards.");
+      return [];
+    }
+  };
+
+  const fetchColumns = async (boardId: string) => {
     setIsFetching(true);
     try {
-      const response = await axios.get<Column[]>(`${API_URL}/columns`);
+      // BUSCA COLUNAS AGORA COM boardId
+      const response = await axios.get<Column[]>(
+        `${API_URL}/columns?boardId=${boardId}`
+      );
       setColumns(response.data);
     } catch (error) {
       console.error("Erro ao carregar colunas:", error);
       toast.error("Erro ao carregar colunas.");
+      setColumns([]);
     } finally {
       setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchColumns();
+    // 1. Primeiro busca os boards
+    fetchBoards();
   }, []);
+
+  useEffect(() => {
+    // 2. Quando o board atual for definido, busca as colunas
+    if (currentBoard) {
+      fetchColumns(currentBoard.id);
+    }
+  }, [currentBoard]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -68,7 +101,7 @@ export function Home() {
     return columns.flatMap((col) => col.tasks).find((t) => t.id === taskId);
   };
 
-  //Funções de DND
+  // Funções de DND (movimentação de tarefas)
   const handleDragStart = (event: DragStartEvent) => {
     const task = findTaskById(event.active.id as string);
     setActiveTask(task || null);
@@ -78,8 +111,7 @@ export function Home() {
     setActiveTask(null);
     const { active, over } = event;
 
-    if (!over) return;
-    if (!activeTask) return;
+    if (!over || !activeTask || !currentBoard) return;
 
     const activeId = active.id as string;
     const overId = over.id as string;
@@ -112,47 +144,32 @@ export function Home() {
     const newOrder = overIndex;
     const newColumnId = overColumnId;
 
-    //Otimisticamente atualizar o estado
-    setColumns((prev) => {
-      const newCols = prev.map((col) => {
+    // Otimisticamente atualizar o estado (simplificado, mas precisa de reindexação do backend)
+    // Otimisticamente remove da coluna antiga
+    const newCols = columns.map((col) => {
         if (col.id === activeColumnId) {
-          //Remove da coluna antiga
-          return { ...col, tasks: col.tasks.filter((t) => t.id !== activeId) };
+            return { ...col, tasks: col.tasks.filter((t) => t.id !== activeId) };
         }
         return col;
-      });
-
-      const targetCol = newCols.find((col) => col.id === newColumnId);
-      if (targetCol) {
-        //Insere na nova coluna/posição
-        const newTasks = [...targetCol.tasks];
-        const updatedActiveTask = {
-          ...activeTask,
-          columnId: newColumnId,
-          order: newOrder,
-        };
-
-        // Se a coluna de destino é a mesma e só está reordenando
-        if (activeColumnId === newColumnId) {
-          const tempTasks = arrayMove(
-            oldColumn.tasks,
-            activeIndex,
-            newOrder
-          ).filter((t) => t.id !== activeId);
-          tempTasks.splice(newOrder, 0, updatedActiveTask as Task);
-          return newCols.map((col) =>
-            col.id === newColumnId ? { ...col, tasks: tempTasks } : col
-          );
-        } else {
-          // Movendo para outra coluna
-          newTasks.splice(newOrder, 0, updatedActiveTask as Task);
-          return newCols.map((col) =>
-            col.id === newColumnId ? { ...col, tasks: newTasks } : col
-          );
-        }
-      }
-      return newCols;
     });
+
+    // Encontra a coluna de destino
+    const targetCol = newCols.find((col) => col.id === newColumnId);
+    if (targetCol) {
+        // Insere na nova coluna/posição
+        const updatedActiveTask = {
+            ...activeTask,
+            columnId: newColumnId,
+            order: newOrder,
+        };
+        const newTasks = [...targetCol.tasks];
+        newTasks.splice(newOrder, 0, updatedActiveTask as Task);
+        
+        setColumns(newCols.map((col) => 
+            col.id === newColumnId ? { ...col, tasks: newTasks } : col
+        ));
+    }
+
 
     //Chamar API para persistir
     try {
@@ -168,11 +185,17 @@ export function Home() {
       console.error("Erro ao persistir movimento:", error);
       toast.error("Erro ao mover tarefa. Recarregue a página.");
       // Se a persistência falhar, re-fetch para reverter ao estado real
-      fetchColumns();
+      fetchColumns(currentBoard.id);
     }
   };
 
-  //Funções de CRUD de Tarefas
+
+  // Funções de CRUD de Boards
+  const handleSelectBoard = (board: Board) => {
+    setCurrentBoard(board);
+  };
+  
+  // Funções de CRUD de Tarefas
   const handleOpenTaskDialog = (task: Task) => {
     setSelectedTask(task);
     setIsTaskDialogOpen(true);
@@ -241,8 +264,6 @@ export function Home() {
     try {
       await axios.delete(`${API_URL}/tasks/${taskId}`);
 
-      // Simplesmente remove a tarefa do estado e re-fetch para reindexação (mais seguro)
-      // Ou remove otimisticamente
       setColumns((prev) => {
         return prev.map((col) => ({
           ...col,
@@ -252,7 +273,10 @@ export function Home() {
 
       toast.success("Tarefa excluída!");
       setIsTaskDialogOpen(false);
-      fetchColumns();
+      // Re-fetch para reindexação (opcional, mas mais seguro para DND)
+      if (currentBoard) {
+        fetchColumns(currentBoard.id);
+      }
     } catch (error) {
       console.error("Erro ao deletar tarefa:", error);
       toast.error("Falha ao deletar tarefa.");
@@ -283,7 +307,7 @@ export function Home() {
     }
   };
 
-  //Funções de CRUD de Colunas
+  // Funções de CRUD de Colunas
   const handleOpenColumnEdit = (column: Column) => {
     if (!isAdmin) return;
     setSelectedColumn(column);
@@ -334,6 +358,9 @@ export function Home() {
       setColumns((prev) => prev.filter((col) => col.id !== columnId));
 
       toast.success("Coluna excluída com sucesso.");
+      if (currentBoard) {
+        fetchColumns(currentBoard.id); // Re-fetch para reindexar colunas
+      }
     } catch (error) {
       console.error("Erro ao deletar coluna:", error);
       toast.error("Falha ao deletar coluna.");
@@ -341,14 +368,15 @@ export function Home() {
   };
 
   const handleAddColumn = async () => {
-    if (!isAdmin) {
-      toast.error("Apenas administradores podem criar colunas");
+    if (!isAdmin || !currentBoard) {
+      toast.error("Apenas administradores podem criar colunas ou board não selecionado.");
       return;
     }
 
     try {
       const response = await axios.post<Column>(`${API_URL}/columns`, {
         title: "NOVA COLUNA",
+        boardId: currentBoard.id, // NOVO: Envia o boardId
       });
 
       setColumns([...columns, { ...response.data, tasks: [] }]);
@@ -359,16 +387,22 @@ export function Home() {
     }
   };
 
-  if (isFetching) {
-    //
-    return <div>Loading...</div>;
+  if (isFetching && !currentBoard) {
+    return <div className="p-6">Carregando boards...</div>;
+  }
+  
+  if (!currentBoard) {
+    return (
+        <div className="flex h-screen items-center justify-center">
+            <p className="text-xl">Nenhum board encontrado. Tente recarregar ou contacte o suporte.</p>
+        </div>
+    );
   }
 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
       <div className="w-64 border-r bg-background p-6 flex flex-col">
-        {/* ... (código do cabeçalho da sidebar) ... */}
         <div className="mb-8 flex items-center justify-between">
           <h2 className="text-2xl font-bold">Task Manager</h2>
           <ModeToggle />
@@ -386,12 +420,29 @@ export function Home() {
             {user?.role}
           </span>
         </div>
+        
+        <Separator className="mb-4" />
 
-        <div className="flex-1" />
+        {/* Lista de Boards */}
+        <h3 className="text-lg font-semibold mb-2">Seus Boards</h3>
+        <div className="flex-1 overflow-y-auto space-y-1">
+          {boards.map((board) => (
+            <Button
+              key={board.id}
+              variant={board.id === currentBoard.id ? "secondary" : "ghost"}
+              className="w-full justify-start gap-2"
+              onClick={() => handleSelectBoard(board)}
+            >
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="truncate flex-1 text-left">{board.title}</span>
+              {board.isMainBoard && <span className="text-xs text-muted-foreground"> (Admin)</span>}
+            </Button>
+          ))}
+        </div>
 
         <Button
           variant="ghost"
-          className="w-full justify-start"
+          className="w-full justify-start mt-6"
           onClick={logout}
         >
           <LogOut className="mr-2 h-4 w-4" />
@@ -402,7 +453,8 @@ export function Home() {
       {/* Board */}
       <div className="flex-1 overflow-x-auto bg-background/50 p-6">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Quadro de Tarefas</h1>
+          <h1 className="text-3xl font-bold">Board: {currentBoard.title}</h1>
+          {/* Apenas ADMIN pode adicionar coluna no board selecionado */}
           {isAdmin && (
             <Button onClick={handleAddColumn}>
               <Plus className="mr-2 h-4 w-4" />
@@ -411,36 +463,43 @@ export function Home() {
           )}
         </div>
 
-        <DndContext
-          sensors={sensors}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex gap-4 pb-4 h-full">
-            {columns.map((column) => (
-              <BoardColumn
-                key={column.id}
-                column={column}
-                onAddTask={handleCreateTask}
-                onTaskClick={handleOpenTaskDialog}
-                onToggleTaskDone={handleToggleTaskDone}
-                onEditColumn={handleOpenColumnEdit}
-                onDeleteColumn={handleDeleteColumn}
-                canManageColumns={isAdmin}
-              />
-            ))}
-          </div>
+        {isFetching ? (
+            <div className="text-center text-muted-foreground pt-10">
+                Carregando colunas...
+            </div>
+        ) : (
+            <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
+                <div className="flex gap-4 pb-4 h-full">
+                {columns.map((column) => (
+                    <BoardColumn
+                    key={column.id}
+                    column={column}
+                    onAddTask={handleCreateTask}
+                    onTaskClick={handleOpenTaskDialog}
+                    onToggleTaskDone={handleToggleTaskDone}
+                    onEditColumn={handleOpenColumnEdit}
+                    onDeleteColumn={handleDeleteColumn}
+                    // Apenas ADMIN pode gerenciar colunas, independente do board
+                    canManageColumns={isAdmin} 
+                    />
+                ))}
+                </div>
 
-          <DragOverlay>
-            {activeTask ? (
-              <TaskCard
-                task={activeTask}
-                onClick={() => {}}
-                onToggleDone={() => {}}
-              />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+                <DragOverlay>
+                {activeTask ? (
+                    <TaskCard
+                    task={activeTask}
+                    onClick={() => {}}
+                    onToggleDone={() => {}}
+                    />
+                ) : null}
+                </DragOverlay>
+            </DndContext>
+        )}
       </div>
 
       {selectedTask && (

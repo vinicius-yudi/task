@@ -67,7 +67,7 @@ export function TaskCard({ task, onClick, onToggleDone }: TaskCardProps) {
                 onToggleDone(task.id, !task.done);
               }}
               title={
-                task.done ? "Marcar como Concluída" : "Marcar como Pendente"
+                task.done ? "Tarefa Desmarcada" : "Marcar como Concluída"
               }
               className="shrink-0 transition-colors mt-1"
             >

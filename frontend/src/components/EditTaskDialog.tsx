@@ -94,8 +94,8 @@ export function EditTaskDialog({
             <textarea
               id="description"
               rows={4}
+              placeholder="Descrição"
               className="flex h-auto w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={!isAdmin}
             />

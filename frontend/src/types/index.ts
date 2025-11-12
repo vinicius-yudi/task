@@ -1,3 +1,14 @@
+//
+export interface Board {
+  id: string;
+  title: string;
+  slug: string;
+  isMainBoard: boolean;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -8,7 +19,6 @@ export interface Task {
   userId: string;
   columnId: string;
   order: number;
-
 }
 
 export interface Column {
@@ -16,7 +26,8 @@ export interface Column {
   title: string;
   tasks: Task[];
   order: number;
-  userId: string;
+  // Removida: userId: string;
+  boardId: string; // Novo: Board ID
   createdAt: string;
   updatedAt: string;
 }

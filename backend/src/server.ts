@@ -5,6 +5,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth"; 
 import taskRoutes from "./routes/tasks";
 import columnRoutes from "./routes/columns";  
+import boardRoutes from "./routes/boards";
 
 
 
@@ -23,6 +24,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/tasks", taskRoutes);
 app.use("/api/columns", columnRoutes);
+app.use("/api/boards", boardRoutes);
 
 // Health check route
 app.get("/health", (_req, res) => res.send("ok"));
