@@ -1,104 +1,124 @@
-// frontend/src/components/Sidebar.tsx (Versão atualizada)
-import { LogOut, LayoutDashboard, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import {
+  LogOut,
+  LayoutDashboard,
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Type,
+} from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { ModeToggle } from "@/components/Mode-toggle";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { TypeUser } from "@/components/TypeUser";
 import type { Board } from "@/types";
 
 interface SidebarProps {
   boards: Board[];
   currentBoard: Board | null;
   onSelectBoard: (board: Board) => void;
-  onCreateBoard: () => void; 
-  onEditBoard: () => void;   
-  onDeleteBoard: (boardId: string) => void; 
-  canManageBoard: boolean; 
+  onCreateBoard: () => void;
+  onEditBoard: (board: Board) => void;
+  onDeleteBoard: (boardId: string) => void;
 }
 
-export function Sidebar({ boards, currentBoard, onSelectBoard, onCreateBoard, onEditBoard, onDeleteBoard, canManageBoard }: SidebarProps) {
+export function Sidebar({
+  boards,
+  currentBoard,
+  onSelectBoard,
+  onCreateBoard,
+  onEditBoard,
+  onDeleteBoard,
+}: SidebarProps) {
   const { logout, isAdmin, user } = useAuth();
-  
-  const isMainBoard = currentBoard?.isMainBoard;
-
-  const shouldDisableMainBoardAction = isMainBoard && !isAdmin;
 
   return (
-    <div className="w-64 border-r bg-background p-6 flex flex-col">
+    <div className="w-80 border-r bg-background p-6 flex flex-col">
       <div className="mb-8 flex items-center justify-between">
         <h2 className="text-2xl font-bold">Task Manager</h2>
         <ModeToggle />
       </div>
 
-      <div className="mb-4 p-3 rounded-lg bg-muted">
-        <p className="text-sm font-medium">{user?.name}</p>
-        <p className="text-xs text-muted-foreground">{user?.email}</p>
-        <span
-          className={`inline-block mt-2 px-2 py-1 text-xs rounded font-semibold ${
-            isAdmin ? "bg-purple-500 text-white" : "bg-blue-500 text-white"
-          }`}
-        >
-          {user?.role}
-        </span>
-      </div>
-      
       <Separator className="mb-4" />
 
-      {currentBoard && canManageBoard && (
-        <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold truncate" title={currentBoard.title}>Board Atual</h3>
-            <div className="flex gap-1">
-                <Button
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="text-lg font-semibold">Boards</h3>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title="Criar Novo Board"
+          onClick={onCreateBoard}
+        >
+          <PlusCircle className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-1">
+        {boards.map((board) => {
+          const isSelected = board.id === currentBoard?.id;
+          const isOwner = board.userId === user?.id;
+
+          const isActionDisabled = board.isMainBoard && !isAdmin;
+
+          return (
+            <div key={board.id} className="group/board-item relative">
+              <Button
+                variant={isSelected ? "secondary" : "ghost"}
+                className="w-full justify-start gap-2 pr-10"
+                onClick={() => onSelectBoard(board)}
+              >
+                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                <span className="truncate flex-1 text-left">{board.title}</span>
+                {board.isMainBoard && (
+                  <span className="text-xs text-muted-foreground shrink-0">
+                  </span>
+                )}
+              </Button>
+
+              {isOwner && (
+                <div
+                  className={
+                    "absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 transition-opacity " +
+                    (isSelected
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/board-item:opacity-100")
+                  }
+                >
+                  <Button
                     variant="ghost"
                     size="icon-sm"
                     title="Editar Board"
-                    onClick={onEditBoard}
-                    // Desabilita se for o board principal
-                    disabled={shouldDisableMainBoardAction} 
-                >
-                    <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditBoard(board);
+                    }}
+                    disabled={isActionDisabled}
+                    className="p-0 size-6"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
                     variant="destructive"
                     size="icon-sm"
                     title="Excluir Board"
-                    onClick={() => onDeleteBoard(currentBoard.id)}
-                    // Desabilita se for o board principal
-                    disabled={shouldDisableMainBoardAction} 
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteBoard(board.id);
+                    }}
+                    disabled={isActionDisabled}
+                    className="p-0 size-6"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
             </div>
-        </div>
-      )}
-      
-      {/* Lista de Boards com botão para criar novo (Novo) */}
-      <div className="flex justify-between items-center mb-2">
-          <h3 className="text-lg font-semibold">Boards</h3>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            title="Criar Novo Board"
-            onClick={onCreateBoard}
-          >
-              <PlusCircle className="h-4 w-4" />
-          </Button>
+          );
+        })}
       </div>
-      
-      <div className="flex-1 overflow-y-auto space-y-1">
-        {boards.map((board) => (
-          <Button
-            key={board.id}
-            variant={board.id === currentBoard?.id ? "secondary" : "ghost"}
-            className="w-full justify-start gap-2"
-            onClick={() => onSelectBoard(board)}
-          >
-            <LayoutDashboard className="h-4 w-4" />
-            <span className="truncate flex-1 text-left">{board.title}</span>
-            {board.isMainBoard && <span className="text-xs text-muted-foreground"> (Admin)</span>}
-          </Button>
-        ))}
-      </div>
+
+      <TypeUser />
+      <Separator />
 
       <Button
         variant="ghost"
