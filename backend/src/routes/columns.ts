@@ -64,7 +64,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // Rota para criar uma nova coluna (ADMIN)
-router.post('/', protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.post('/', protect, async (req, res) => {
     try {
         const { title, boardId } = req.body;
         const userId = (req as CustomRequest).user!.id;
@@ -108,7 +108,7 @@ router.post('/', protect, checkRole([Role.ADMIN]), async (req, res) => {
 });
 
 // Rota para atualizar uma coluna (ADMIN)
-router.put('/:id', protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.put('/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
         const { title } = req.body;
@@ -140,7 +140,7 @@ router.put('/:id', protect, checkRole([Role.ADMIN]), async (req, res) => {
 });
 
 // Rota para deletar uma coluna (ADMIN)
-router.delete('/:id', protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.delete('/:id', protect, async (req, res) => {
     try {
         const { id } = req.params;
         const userId = (req as CustomRequest).user!.id;

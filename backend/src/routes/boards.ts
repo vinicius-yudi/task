@@ -11,7 +11,6 @@ router.get('/', protect, async (req, res) => {
         const userId = (req as CustomRequest).user!.id;
         const isAdmin = (req as CustomRequest).user!.role === 'ADMIN';
 
-        // Boards do usuário (criados por ele)
         const userBoards = await prisma.board.findMany({
             where: { userId },
             select: { id: true, title: true, slug: true, isMainBoard: true, userId: true, createdAt: true, updatedAt: true },
@@ -20,7 +19,6 @@ router.get('/', protect, async (req, res) => {
         let boards = [...userBoards];
         let mainBoard = boards.find(b => b.isMainBoard);
 
-        // Lógica de criação do Board Principal do Admin (se for Admin e não tiver)
         if (isAdmin && !mainBoard) {
             const adminEmail = (req as CustomRequest).user!.email;
             const slug = `main-${adminEmail.replace(/[^a-zA-Z0-9]/g, '-')}-${uuidv4()}`;
@@ -61,7 +59,7 @@ router.get('/', protect, async (req, res) => {
                  
                  const newBoard = await prisma.board.create({
                     data: {
-                        title: `Meu Quadro Pessoal`,
+                        title: `Meu Quadro`,
                         slug: slug,
                         isMainBoard: false,
                         userId: userId,
@@ -129,6 +127,73 @@ router.post('/', protect, async (req, res) => {
     } catch (error) {
         console.error('Erro ao criar board:', error);
         res.status(500).json({ message: 'Erro ao criar board' });
+    }
+});
+
+router.put('/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title } = req.body;
+        const user = (req as CustomRequest).user!;
+
+        if (!id || !title) { return res.status(400).json({ message: 'ID e Título do board são obrigatórios' }); }
+
+        const board = await prisma.board.findFirst({
+            where: { id, userId: user.id },
+        });
+
+        // Apenas o owner do board pode editar
+        if (!board) {
+            return res.status(403).json({ message: 'Acesso negado: Board não encontrado ou você não é o proprietário.' });
+        }
+        
+        // Não permitir edição do título do MainBoard (Regra do negócio)
+        if (board.isMainBoard && user.role !== 'ADMIN') {
+             return res.status(403).json({ message: 'Acesso negado: Somente administradores podem editar o Quadro Principal.' });
+        }
+
+        const updatedBoard = await prisma.board.update({
+            where: { id: id },
+            data: { title },
+        });
+
+        return res.json(updatedBoard);
+    } catch (error) {
+        console.error('Erro ao atualizar board:', error);
+        return res.status(500).json({ message: 'Erro ao atualizar board' });
+    }
+});
+
+// Rota para deletar um board (ADMIN ou DEV)
+router.delete('/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = (req as CustomRequest).user!;
+
+        if (!id) { return res.status(400).json({ message: 'ID do board é obrigatório' }); }
+
+        const board = await prisma.board.findFirst({
+            where: { id, userId: user.id },
+        });
+
+        if (!board) {
+            return res.status(403).json({ message: 'Acesso negado: Board não encontrado ou você não é o proprietário.' });
+        }
+        
+        if (board.isMainBoard && user.role !== 'ADMIN') {
+             return res.status(403).json({ message: 'Acesso negado: Não é possível excluir o Quadro Principal.' });
+        }
+
+        await prisma.$transaction(async (prisma) => {
+            await prisma.task.deleteMany({ where: { column: { boardId: id } } });
+            await prisma.column.deleteMany({ where: { boardId: id } });
+            await prisma.board.delete({ where: { id } });
+        });
+
+        return res.status(204).send();
+    } catch (error) {
+        console.error('Erro ao deletar board:', error);
+        return res.status(500).json({ message: 'Erro ao deletar board' });
     }
 });
 
