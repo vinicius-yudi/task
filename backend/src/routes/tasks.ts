@@ -59,7 +59,7 @@ router.get("/:id", protect, async (req, res) => {
 });
 
 // Rota para criar uma nova tarefa (ADMIN)
-router.post("/", protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
     const { title, description, columnId } = req.body;
     const userId = (req as CustomRequest).user!.id;
@@ -113,7 +113,7 @@ router.post("/", protect, checkRole([Role.ADMIN]), async (req, res) => {
 });
 
 // Rota para atualizar detalhes da tarefa (título/descrição) (ADMIN)
-router.put("/:id", protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.put("/:id", protect, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
@@ -306,7 +306,7 @@ router.put("/:id/done", protect, async (req, res) => {
 });
 
 
-router.delete("/:id", protect, checkRole([Role.ADMIN]), async (req, res) => {
+router.delete("/:id", protect, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = (req as CustomRequest).user!.id;
